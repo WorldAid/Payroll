@@ -1,0 +1,18 @@
+---
+id: 0
+name: Mainnet deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: chainhook-contract
+            expected-sender: SP2A8V93XXB43Q8JXQNCS9EBFHZJ6A2HVXHC4F4ZB
+            cost: 56210
+            path: contracts/chainhook-contract.clar
+            anchor-block-only: true
+            clarity-version: 3
+      epoch: "3.2"
