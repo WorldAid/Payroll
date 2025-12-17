@@ -204,17 +204,23 @@ export function App() {
 
     const [contractAddress, contractName] = contractId.split('.');
 
-    await openContractCall({
+    const options = {
       network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
       contractAddress,
       contractName,
       functionName: 'create-invoice',
       functionArgs: [standardPrincipalCV(recipient), uintCV(amount)],
-      onFinish: (data) => {
+      appDetails: {
+        name: 'Stacks Chainhooks Manager',
+        icon: window.location.origin + '/vite.svg',
+      },
+      onFinish: (data: any) => {
         console.log('Transaction finished:', data);
         alert(`Transaction broadcasted: ${data.txId}`);
       },
-    });
+    };
+    console.log('openContractCall options (create-invoice):', options);
+    await openContractCall(options);
   };
 
   const handlePayInvoice = async () => {
@@ -231,17 +237,23 @@ export function App() {
 
     const [contractAddress, contractName] = contractId.split('.');
 
-    await openContractCall({
+    const options = {
       network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
       contractAddress,
       contractName,
       functionName: 'pay-invoice',
       functionArgs: [uintCV(invoiceId)],
-      onFinish: (data) => {
+      appDetails: {
+        name: 'Stacks Chainhooks Manager',
+        icon: window.location.origin + '/vite.svg',
+      },
+      onFinish: (data: any) => {
         console.log('Transaction finished:', data);
         alert(`Transaction broadcasted: ${data.txId}`);
       },
-    });
+    };
+    console.log('openContractCall options (pay-invoice):', options);
+    await openContractCall(options);
   };
 
   const handleGetInvoice = async () => {
