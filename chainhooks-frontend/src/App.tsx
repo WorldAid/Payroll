@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { AppConfig, UserSession, openSignatureRequestPopup } from '@stacks/connect';
+import { AppConfig, UserSession } from '@stacks/connect';
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
@@ -67,16 +67,33 @@ export function App() {
 
   const handleConnect = async () => {
     try {
-      // Use Stacks wallet authentication
-      const authRequest = userSession.makeAuthRequest();
-      const authUrl = authRequest.redirectURI 
-        ? `${authRequest.redirectURI}?authRequest=${authRequest}`
-        : `https://wallet.hiro.so/wallet/sign-in?authRequest=${authRequest}`;
+      // Simple wallet extension detection and connection
+      if (typeof window !== 'undefined' && (window as any).btc) {
+        // Leather wallet
+        const response = await (window as any).btc.request('getAddresses');
+        if (response?.result?.addresses) {
+          const stxAddress = response.result.addresses.find((a: any) => a.type === 'stacks');
+          if (stxAddress) {
+            setIsSignedIn(true);
+            setUserAddress(stxAddress.address);
+            return;
+          }
+        }
+      } else if (typeof window !== 'undefined' && (window as any).StacksProvider) {
+        // Hiro wallet
+        const addresses = await (window as any).StacksProvider.getAddresses();
+        if (addresses?.length > 0) {
+          setIsSignedIn(true);
+          setUserAddress(addresses[0]);
+          return;
+        }
+      }
       
-      window.location.href = authUrl;
+      // Fallback: open Hiro wallet website
+      alert('Please install a Stacks wallet extension (Leather or Hiro Wallet) to connect.');
     } catch (e) {
       console.error('Auth error:', e);
-      setError('Failed to connect wallet. Please try again.');
+      setError('Failed to connect wallet. Please make sure you have a Stacks wallet installed.');
     }
   };
 
