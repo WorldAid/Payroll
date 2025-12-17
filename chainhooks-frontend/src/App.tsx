@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
+import { useConnect } from '@stacks/connect-react';
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
