@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { Connect } from '@stacks/connect-react';
-import { AppConfig, UserSession, showConnect } from '@stacks/connect';
+import { Connect, useConnect } from '@stacks/connect-react';
+import { AppConfig, UserSession } from '@stacks/connect';
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
@@ -34,6 +34,8 @@ const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
 
 function ChainhooksManager() {
+  const { doOpenAuth } = useConnect();
+  
   const [network, setNetwork] = useState<Network>(ENV_DEFAULT_NETWORK);
   const [customBase, setCustomBase] = useState(ENV_DEFAULT_BASE ?? '');
   const baseUrl = network === 'mainnet' ? CHAINHOOKS_BASE_URL.mainnet : CHAINHOOKS_BASE_URL.testnet;
@@ -49,20 +51,6 @@ function ChainhooksManager() {
   const [name, setName] = useState('Stacks Payroll Invoices');
   const [contractId, setContractId] = useState('');
   const [definitionJSON, setDefinitionJSON] = useState('');
-
-  const handleConnect = () => {
-    showConnect({
-      appDetails: {
-        name: 'Stacks Chainhooks Manager',
-        icon: window.location.origin + '/logo.png',
-      },
-      redirectTo: '/',
-      onFinish: () => {
-        window.location.reload();
-      },
-      userSession,
-    });
-  };
 
   useEffect(() => {
     try {
@@ -176,7 +164,7 @@ function ChainhooksManager() {
             })()}
           </div>
         ) : (
-          <button onClick={handleConnect}>Connect Stacks Wallet</button>
+          <button onClick={() => doOpenAuth()}>Connect Stacks Wallet</button>
         )}
       </section>
 
