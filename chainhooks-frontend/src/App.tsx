@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { AppConfig, UserSession } from '@stacks/connect';
+import { AppConfig, UserSession, openContractCall } from '@stacks/connect';
+import { fetchCallReadOnlyFunction, uintCV, standardPrincipalCV, cvToJSON } from '@stacks/transactions';
+import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
@@ -184,6 +186,75 @@ export function App() {
     }
   }
 
+  // Smart Contract Interaction State
+  const [recipient, setRecipient] = useState('');
+  const [amount, setAmount] = useState('');
+  const [invoiceId, setInvoiceId] = useState('');
+  const [invoiceDetails, setInvoiceDetails] = useState<any>(null);
+
+  const handleCreateInvoice = async () => {
+    if (!contractId) {
+      alert('Please set the Contract ID first.');
+      return;
+    }
+    const [contractAddress, contractName] = contractId.split('.');
+
+    await openContractCall({
+      network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
+      contractAddress,
+      contractName,
+      functionName: 'create-invoice',
+      functionArgs: [standardPrincipalCV(recipient), uintCV(amount)],
+      onFinish: (data) => {
+        console.log('Transaction finished:', data);
+        alert(`Transaction broadcasted: ${data.txId}`);
+      },
+    });
+  };
+
+  const handlePayInvoice = async () => {
+    if (!contractId) {
+      alert('Please set the Contract ID first.');
+      return;
+    }
+    const [contractAddress, contractName] = contractId.split('.');
+
+    await openContractCall({
+      network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
+      contractAddress,
+      contractName,
+      functionName: 'pay-invoice',
+      functionArgs: [uintCV(invoiceId)],
+      onFinish: (data) => {
+        console.log('Transaction finished:', data);
+        alert(`Transaction broadcasted: ${data.txId}`);
+      },
+    });
+  };
+
+  const handleGetInvoice = async () => {
+    if (!contractId) {
+      alert('Please set the Contract ID first.');
+      return;
+    }
+    const [contractAddress, contractName] = contractId.split('.');
+
+    try {
+      const result = await fetchCallReadOnlyFunction({
+        network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
+        contractAddress,
+        contractName,
+        functionName: 'get-invoice',
+        functionArgs: [uintCV(invoiceId)],
+        senderAddress: userAddress || contractAddress,
+      });
+      setInvoiceDetails(cvToJSON(result));
+    } catch (e: any) {
+      console.error('Error fetching invoice:', e);
+      setError(e?.message ?? String(e));
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Stacks Chainhooks Manager</h1>
@@ -287,6 +358,47 @@ export function App() {
         </div>
         <div style={{ marginTop: '0.75rem' }}>
           <button onClick={register}>Register</button>
+        </div>
+      </section>
+
+      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <h2>Smart Contract Interactions</h2>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h3>Create Invoice</h3>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Recipient Address</label>
+            <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} style={{ width: '100%' }} placeholder="ST..." />
+          </div>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Amount (microSTX)</label>
+            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: '100%' }} placeholder="1000000" />
+          </div>
+          <button onClick={handleCreateInvoice}>Create Invoice</button>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+          <h3>Pay Invoice</h3>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Invoice ID</label>
+            <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} style={{ width: '100%' }} placeholder="1" />
+          </div>
+          <button onClick={handlePayInvoice}>Pay Invoice</button>
+        </div>
+
+        <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+          <h3>Get Invoice Details</h3>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Invoice ID</label>
+            <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} style={{ width: '100%' }} placeholder="1" />
+          </div>
+          <button onClick={handleGetInvoice} style={{ marginRight: '1rem' }}>Get Invoice</button>
+
+          {invoiceDetails && (
+            <pre style={{ background: '#f5f5f5', padding: '1rem', borderRadius: '4px', overflow: 'auto', marginTop: '1rem' }}>
+              {JSON.stringify(invoiceDetails, null, 2)}
+            </pre>
+          )}
         </div>
       </section>
 
