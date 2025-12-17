@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { AppConfig, UserSession, openContractCall, showConnect } from '@stacks/connect';
+import { AppConfig, UserSession, openContractCall, authenticate } from '@stacks/connect';
+import * as StacksConnect from '@stacks/connect';
+console.log('StacksConnect imports:', StacksConnect);
+console.log('authenticate:', authenticate);
+
 import { fetchCallReadOnlyFunction, uintCV, standardPrincipalCV, cvToJSON } from '@stacks/transactions';
 import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
 
@@ -71,7 +75,7 @@ export function App() {
   const [showManualInput, setShowManualInput] = useState(false);
 
   const handleConnect = () => {
-    showConnect({
+    authenticate({
       appDetails: {
         name: 'Stacks Chainhooks Manager',
         icon: window.location.origin + '/vite.svg',
