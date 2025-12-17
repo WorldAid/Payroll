@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { AppConfig, UserSession, openContractCall } from '@stacks/connect';
+import { AppConfig, UserSession, openContractCall, showConnect } from '@stacks/connect';
 import { fetchCallReadOnlyFunction, uintCV, standardPrincipalCV, cvToJSON } from '@stacks/transactions';
 import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
 
@@ -70,36 +70,26 @@ export function App() {
   const [manualAddress, setManualAddress] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
 
-  const handleConnect = async () => {
-    try {
-      // Simple wallet extension detection and connection
-      if (typeof window !== 'undefined' && (window as any).btc) {
-        // Leather wallet
-        const response = await (window as any).btc.request('getAddresses');
-        if (response?.result?.addresses) {
-          const stxAddress = response.result.addresses.find((a: any) => a.type === 'stacks');
-          if (stxAddress) {
-            setIsSignedIn(true);
-            setUserAddress(stxAddress.address);
-            return;
-          }
-        }
-      } else if (typeof window !== 'undefined' && (window as any).StacksProvider) {
-        // Hiro wallet
-        const addresses = await (window as any).StacksProvider.getAddresses();
-        if (addresses?.length > 0) {
-          setIsSignedIn(true);
-          setUserAddress(addresses[0]);
-          return;
-        }
-      }
-
-      // Fallback: open Hiro wallet website
-      alert('Please install a Stacks wallet extension (Leather or Hiro Wallet) to connect.');
-    } catch (e) {
-      console.error('Auth error:', e);
-      setError('Failed to connect wallet. Please make sure you have a Stacks wallet installed.');
-    }
+  const handleConnect = () => {
+    showConnect({
+      appDetails: {
+        name: 'Stacks Chainhooks Manager',
+        icon: window.location.origin + '/vite.svg',
+      },
+      redirectTo: '/',
+      onFinish: () => {
+        const userData = userSession.loadUserData();
+        const addr = userData?.profile?.stxAddress?.[network];
+        setIsSignedIn(true);
+        setUserAddress(addr || '');
+      },
+      onCancel: () => {
+        // Fallback to manual
+        setError('No wallet selected. Please connect manually below.');
+        setShowManualInput(true);
+      },
+      userSession,
+    });
   };
 
   const handleManualConnect = () => {
@@ -107,6 +97,7 @@ export function App() {
       setIsSignedIn(true);
       setUserAddress(manualAddress.trim());
       setShowManualInput(false);
+      setError(null);
     }
   };
 
@@ -115,6 +106,7 @@ export function App() {
     setIsSignedIn(false);
     setUserAddress('');
     setManualAddress('');
+    setError(null);
     // window.location.reload(); // Removed reload to keep state for manual testing
   };
 
@@ -192,11 +184,20 @@ export function App() {
   const [invoiceId, setInvoiceId] = useState('');
   const [invoiceDetails, setInvoiceDetails] = useState<any>(null);
 
+  const isManualMode = !((typeof window !== 'undefined' && (window as any).btc) || (typeof window !== 'undefined' && (window as any).StacksProvider));
+
   const handleCreateInvoice = async () => {
     if (!contractId) {
       alert('Please set the Contract ID first.');
       return;
     }
+
+    if (isManualMode) {
+      const mockTxId = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      alert(`[SIMULATION] Transaction broadcasted: ${mockTxId}\n\n(This is a simulated transaction because no wallet is connected)`);
+      return;
+    }
+
     const [contractAddress, contractName] = contractId.split('.');
 
     await openContractCall({
@@ -217,6 +218,13 @@ export function App() {
       alert('Please set the Contract ID first.');
       return;
     }
+
+    if (isManualMode) {
+      const mockTxId = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      alert(`[SIMULATION] Transaction broadcasted: ${mockTxId}\n\n(This is a simulated transaction because no wallet is connected)`);
+      return;
+    }
+
     const [contractAddress, contractName] = contractId.split('.');
 
     await openContractCall({
