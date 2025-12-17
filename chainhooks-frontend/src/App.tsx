@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
 import { AppConfig, UserSession, openContractCall, authenticate } from '@stacks/connect';
 import * as StacksConnect from '@stacks/connect';
-console.log('StacksConnect imports:', StacksConnect);
-console.log('authenticate:', authenticate);
-
 import { fetchCallReadOnlyFunction, uintCV, standardPrincipalCV, cvToJSON } from '@stacks/transactions';
 import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
+import './App.css';
+
+console.log('StacksConnect imports:', StacksConnect);
+console.log('authenticate:', authenticate);
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
@@ -111,7 +112,6 @@ export function App() {
     setUserAddress('');
     setManualAddress('');
     setError(null);
-    // window.location.reload(); // Removed reload to keep state for manual testing
   };
 
   const copyAddress = () => {
@@ -268,37 +268,38 @@ export function App() {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
+    <div className="app-container">
       <h1>Stacks Chainhooks Manager</h1>
 
-      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+      <section className="card">
         <h2>Wallet</h2>
         {isSignedIn ? (
-          <div>
-            <p>Connected: {userAddress || 'Unknown address'}</p>
-            <button onClick={copyAddress} style={{ marginRight: '8px' }}>
+          <div className="flex-row">
+            <p style={{ margin: 0, marginRight: '1rem' }}>Connected: {userAddress || 'Unknown address'}</p>
+            <button onClick={copyAddress}>
               Copy
             </button>
-            <button onClick={handleDisconnect} style={{ color: 'crimson' }}>
+            <button onClick={handleDisconnect} className="danger">
               Disconnect
             </button>
           </div>
         ) : (
           <div>
-            <button onClick={handleConnect} style={{ marginRight: '10px' }}>Connect Stacks Wallet</button>
-            <button onClick={() => setShowManualInput(!showManualInput)}>
-              {showManualInput ? 'Cancel Manual' : 'Connect Manually'}
-            </button>
+            <div className="flex-row">
+              <button onClick={handleConnect}>Connect Stacks Wallet</button>
+              <button onClick={() => setShowManualInput(!showManualInput)} className="secondary">
+                {showManualInput ? 'Cancel Manual' : 'Connect Manually'}
+              </button>
+            </div>
 
             {showManualInput && (
-              <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '4px' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Enter Stacks Address:</label>
+              <div className="manual-input-container">
+                <label>Enter Stacks Address:</label>
                 <input
                   type="text"
                   value={manualAddress}
                   onChange={(e) => setManualAddress(e.target.value)}
                   placeholder="ST..."
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
                 />
                 <button onClick={handleManualConnect} disabled={!manualAddress}>
                   Set Address
@@ -309,143 +310,159 @@ export function App() {
         )}
       </section>
 
-      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+      <section className="card">
         <h2>Configuration</h2>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Network</label>
-          <select value={network} onChange={(e) => setNetwork(e.target.value as Network)}>
-            <option value="mainnet">mainnet ({CHAINHOOKS_BASE_URL.mainnet})</option>
-            <option value="testnet">testnet ({CHAINHOOKS_BASE_URL.testnet})</option>
-          </select>
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Custom Base URL</label>
-          <input type="text" value={customBase} onChange={(e) => setCustomBase(e.target.value)} style={{ width: '100%' }} />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>API Key</label>
-          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} style={{ width: '100%' }} />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>JWT</label>
-          <input type="password" value={jwt} onChange={(e) => setJwt(e.target.value)} style={{ width: '100%' }} />
+        <div className="grid-2">
+          <div>
+            <label>Network</label>
+            <select value={network} onChange={(e) => setNetwork(e.target.value as Network)}>
+              <option value="mainnet">mainnet ({CHAINHOOKS_BASE_URL.mainnet})</option>
+              <option value="testnet">testnet ({CHAINHOOKS_BASE_URL.testnet})</option>
+            </select>
+          </div>
+          <div>
+            <label>Custom Base URL</label>
+            <input type="text" value={customBase} onChange={(e) => setCustomBase(e.target.value)} />
+          </div>
+          <div>
+            <label>API Key</label>
+            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+          </div>
+          <div>
+            <label>JWT</label>
+            <input type="password" value={jwt} onChange={(e) => setJwt(e.target.value)} />
+          </div>
         </div>
       </section>
 
-      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-        <h2>Status</h2>
+      <section className="card">
+        <div className="flex-between">
+          <h2>Status</h2>
+          <button onClick={refresh} className="secondary">
+            Refresh
+          </button>
+        </div>
+
         {loading ? (
-          <div>Loading…</div>
+          <div style={{ marginTop: '1rem' }}>Loading…</div>
         ) : status ? (
-          <pre style={{ background: '#f5f5f5', padding: '1rem', borderRadius: '4px', overflow: 'auto' }}>
+          <pre className="status-box" style={{ marginTop: '1rem' }}>
             {JSON.stringify(status, null, 2)}
           </pre>
         ) : (
-          <p>No status yet.</p>
+          <p style={{ marginTop: '1rem' }}>No status yet.</p>
         )}
-        {error && <div style={{ color: 'crimson', marginTop: '1rem' }}>Error: {error}</div>}
-        <button onClick={refresh} style={{ marginTop: '1rem' }}>
-          Refresh
-        </button>
+        {error && <div className="error-message">Error: {error}</div>}
       </section>
 
-      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+      <section className="card">
         <h2>Register Payroll Chainhook</h2>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%' }} />
+        <div className="grid-2">
+          <div>
+            <label>Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <label>Contract ID</label>
+            <input type="text" value={contractId} onChange={(e) => setContractId(e.target.value)} />
+          </div>
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Contract ID</label>
-          <input type="text" value={contractId} onChange={(e) => setContractId(e.target.value)} style={{ width: '100%' }} />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Definition (JSON)</label>
+        <div>
+          <label>Definition (JSON)</label>
           <textarea
             value={definitionJSON}
             onChange={(e) => setDefinitionJSON(e.target.value)}
             rows={15}
-            style={{ width: '100%', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+            className="code-input"
+            style={{ fontFamily: 'monospace' }}
           />
         </div>
-        <div style={{ marginTop: '0.75rem' }}>
+        <div style={{ marginTop: '1rem' }}>
           <button onClick={register}>Register</button>
         </div>
       </section>
 
-      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+      <section className="card">
         <h2>Smart Contract Interactions</h2>
 
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
           <h3>Create Invoice</h3>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Recipient Address</label>
-            <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} style={{ width: '100%' }} placeholder="ST..." />
-          </div>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Amount (microSTX)</label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: '100%' }} placeholder="1000000" />
+          <div className="grid-2">
+            <div>
+              <label>Recipient Address</label>
+              <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="ST..." />
+            </div>
+            <div>
+              <label>Amount (microSTX)</label>
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1000000" />
+            </div>
           </div>
           <button onClick={handleCreateInvoice}>Create Invoice</button>
         </div>
 
-        <div style={{ marginBottom: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+        <div style={{ marginBottom: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
           <h3>Pay Invoice</h3>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Invoice ID</label>
-            <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} style={{ width: '100%' }} placeholder="1" />
+          <div>
+            <label>Invoice ID</label>
+            <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} placeholder="1" />
           </div>
           <button onClick={handlePayInvoice}>Pay Invoice</button>
         </div>
 
-        <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
           <h3>Get Invoice Details</h3>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Invoice ID</label>
-            <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} style={{ width: '100%' }} placeholder="1" />
+          <div className="flex-row" style={{ alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label>Invoice ID</label>
+              <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} placeholder="1" style={{ marginBottom: 0 }} />
+            </div>
+            <button onClick={handleGetInvoice}>Get Invoice</button>
           </div>
-          <button onClick={handleGetInvoice} style={{ marginRight: '1rem' }}>Get Invoice</button>
 
           {invoiceDetails && (
-            <pre style={{ background: '#f5f5f5', padding: '1rem', borderRadius: '4px', overflow: 'auto', marginTop: '1rem' }}>
+            <pre className="status-box" style={{ marginTop: '1rem' }}>
               {JSON.stringify(invoiceDetails, null, 2)}
             </pre>
           )}
         </div>
       </section>
 
-      <section>
+      <section className="card">
         <h2>Existing Chainhooks</h2>
         {hooks.length === 0 ? (
           <p>No chainhooks.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 6 }}>Name</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 6 }}>UUID</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 6 }}>Enabled</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 6 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hooks.map((h) => (
-                <tr key={h.uuid}>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 6 }}>{h.definition?.name ?? '(no name)'}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 6 }}>{h.uuid}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 6 }}>{String(h.enabled)}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 6 }}>
-                    <button onClick={() => toggleEnabled(h.uuid, !h.enabled)} style={{ marginRight: 8 }}>
-                      {h.enabled ? 'Disable' : 'Enable'}
-                    </button>
-                    <button onClick={() => remove(h.uuid)} style={{ color: 'crimson' }}>
-                      Delete
-                    </button>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>UUID</th>
+                  <th>Enabled</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {hooks.map((h) => (
+                  <tr key={h.uuid}>
+                    <td>{h.definition?.name ?? '(no name)'}</td>
+                    <td>{h.uuid}</td>
+                    <td>{String(h.enabled)}</td>
+                    <td>
+                      <div className="flex-row">
+                        <button onClick={() => toggleEnabled(h.uuid, !h.enabled)} className="secondary">
+                          {h.enabled ? 'Disable' : 'Enable'}
+                        </button>
+                        <button onClick={() => remove(h.uuid)} className="danger">
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>
