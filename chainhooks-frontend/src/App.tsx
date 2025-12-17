@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { Connect, useConnect } from '@stacks/connect-react';
-import { AppConfig, UserSession } from '@stacks/connect';
+import { AppConfig, UserSession, openSignatureRequestPopup } from '@stacks/connect';
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
@@ -33,9 +32,7 @@ const DEFAULT_DEFINITION_TEMPLATE = (contractId: string, network: Network) => ({
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
 
-function ChainhooksManager() {
-  const { doOpenAuth } = useConnect();
-  
+export function App() {
   const [network, setNetwork] = useState<Network>(ENV_DEFAULT_NETWORK);
   const [customBase, setCustomBase] = useState(ENV_DEFAULT_BASE ?? '');
   const baseUrl = network === 'mainnet' ? CHAINHOOKS_BASE_URL.mainnet : CHAINHOOKS_BASE_URL.testnet;
@@ -51,6 +48,52 @@ function ChainhooksManager() {
   const [name, setName] = useState('Stacks Payroll Invoices');
   const [contractId, setContractId] = useState('');
   const [definitionJSON, setDefinitionJSON] = useState('');
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [userAddress, setUserAddress] = useState<string>('');
+
+  // Check auth status
+  useEffect(() => {
+    if (userSession.isUserSignedIn()) {
+      setIsSignedIn(true);
+      try {
+        const userData = userSession.loadUserData();
+        const addr = userData?.profile?.stxAddress?.[network];
+        setUserAddress(addr || '');
+      } catch (e) {
+        console.error('Error loading user data:', e);
+      }
+    }
+  }, [network]);
+
+  const handleConnect = async () => {
+    try {
+      // Use Stacks wallet authentication
+      const authRequest = userSession.makeAuthRequest();
+      const authUrl = authRequest.redirectURI 
+        ? `${authRequest.redirectURI}?authRequest=${authRequest}`
+        : `https://wallet.hiro.so/wallet/sign-in?authRequest=${authRequest}`;
+      
+      window.location.href = authUrl;
+    } catch (e) {
+      console.error('Auth error:', e);
+      setError('Failed to connect wallet. Please try again.');
+    }
+  };
+
+  const handleDisconnect = () => {
+    userSession.signUserOut();
+    setIsSignedIn(false);
+    setUserAddress('');
+    window.location.reload();
+  };
+
+  const copyAddress = () => {
+    try {
+      navigator.clipboard.writeText(userAddress);
+    } catch (e) {
+      console.error('Copy failed:', e);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -118,53 +161,18 @@ function ChainhooksManager() {
 
       <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
         <h2>Wallet</h2>
-        {userSession?.isUserSignedIn() ? (
+        {isSignedIn ? (
           <div>
-            {(() => {
-              try {
-                const userData: any = userSession.loadUserData();
-                const addr: string | undefined = userData?.profile?.stxAddress?.[network];
-                return (
-                  <>
-                    <p>Connected: {addr ?? 'Unknown address'}</p>
-                    <button
-                      onClick={() => {
-                        try {
-                          navigator.clipboard.writeText(addr ?? '');
-                        } catch {}
-                      }}
-                      style={{ marginRight: '8px' }}
-                    >
-                      Copy
-                    </button>
-                    <button
-                      onClick={() => {
-                        userSession.signUserOut();
-                        window.location.reload();
-                      }}
-                      style={{ color: 'crimson' }}
-                    >
-                      Disconnect
-                    </button>
-                  </>
-                );
-              } catch {
-                return (
-                  <button
-                    onClick={() => {
-                      userSession.signUserOut();
-                      window.location.reload();
-                    }}
-                    style={{ color: 'crimson' }}
-                  >
-                    Disconnect
-                  </button>
-                );
-              }
-            })()}
+            <p>Connected: {userAddress || 'Unknown address'}</p>
+            <button onClick={copyAddress} style={{ marginRight: '8px' }}>
+              Copy
+            </button>
+            <button onClick={handleDisconnect} style={{ color: 'crimson' }}>
+              Disconnect
+            </button>
           </div>
         ) : (
-          <button onClick={() => doOpenAuth()}>Connect Stacks Wallet</button>
+          <button onClick={handleConnect}>Connect Stacks Wallet</button>
         )}
       </section>
 
@@ -267,25 +275,5 @@ function ChainhooksManager() {
         )}
       </section>
     </div>
-  );
-}
-
-export function App() {
-  return (
-    <Connect
-      authOptions={{
-        appDetails: {
-          name: 'Stacks Chainhooks Manager',
-          icon: window.location.origin + '/logo.png',
-        },
-        redirectTo: '/',
-        onFinish: () => {
-          window.location.reload();
-        },
-        userSession,
-      }}
-    >
-      <ChainhooksManager />
-    </Connect>
   );
 }
