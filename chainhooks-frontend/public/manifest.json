@@ -1,0 +1,14 @@
+{
+    "name": "Stacks Chainhooks Manager",
+    "short_name": "Chainhooks",
+    "start_url": "/",
+    "display": "standalone",
+    "icons": [
+      {
+        "src": "/icon.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ],
+    "description": "Manage Stacks chainhooks and connect with Stacks Web Wallet"
+  }

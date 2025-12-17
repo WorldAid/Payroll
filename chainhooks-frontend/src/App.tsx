@@ -12,6 +12,8 @@ function useClient(baseUrl: string, apiKey?: string, jwt?: string) {
   return useMemo(() => new ChainhooksClient({ baseUrl, apiKey, jwt }), [baseUrl, apiKey, jwt]);
 }
 
+const { userSession, doOpenAuth } = useConnect();
+
 const DEFAULT_DEFINITION_TEMPLATE = (contractId: string, network: Network) => ({
   name: 'Stacks Payroll Invoices',
   chain: 'stacks',
@@ -119,6 +121,56 @@ export function App() {
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', margin: '2rem', maxWidth: 1000 }}>
       <h1>Stacks Chainhooks Manager</h1>
+      <section style={{ marginBottom: '1.5rem' }}>
+  <h2>Wallet</h2>
+  {userSession?.isUserSignedIn() ? (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      {(() => {
+        try {
+          const userData: any = userSession.loadUserData();
+          const addr: string | undefined = userData?.profile?.stxAddress?.[network];
+          return (
+            <>
+              <span>Connected: {addr ?? 'Unknown address'}</span>
+              <button
+                onClick={() => {
+                  try {
+                    navigator.clipboard.writeText(addr ?? '');
+                  } catch {}
+                }}
+              >
+                Copy
+              </button>
+              <button
+                onClick={() => {
+                  userSession.signUserOut();
+                  window.location.reload();
+                }}
+                style={{ color: 'crimson' }}
+              >
+                Disconnect
+              </button>
+            </>
+          );
+        } catch {
+          return (
+            <button
+              onClick={() => {
+                userSession.signUserOut();
+                window.location.reload();
+              }}
+              style={{ color: 'crimson' }}
+            >
+              Disconnect
+            </button>
+          );
+        }
+      })()}
+    </div>
+  ) : (
+    <button onClick={() => doOpenAuth?.()}>Connect Stacks Wallet</button>
+  )}
+</section>
 
       <section style={{ marginBottom: '1.5rem' }}>
         <h2>Configuration</h2>
