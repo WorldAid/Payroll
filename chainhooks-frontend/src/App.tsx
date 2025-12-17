@@ -65,6 +65,9 @@ export function App() {
     }
   }, [network]);
 
+  const [manualAddress, setManualAddress] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
+
   const handleConnect = async () => {
     try {
       // Simple wallet extension detection and connection
@@ -88,7 +91,7 @@ export function App() {
           return;
         }
       }
-      
+
       // Fallback: open Hiro wallet website
       alert('Please install a Stacks wallet extension (Leather or Hiro Wallet) to connect.');
     } catch (e) {
@@ -97,11 +100,20 @@ export function App() {
     }
   };
 
+  const handleManualConnect = () => {
+    if (manualAddress.trim()) {
+      setIsSignedIn(true);
+      setUserAddress(manualAddress.trim());
+      setShowManualInput(false);
+    }
+  };
+
   const handleDisconnect = () => {
     userSession.signUserOut();
     setIsSignedIn(false);
     setUserAddress('');
-    window.location.reload();
+    setManualAddress('');
+    // window.location.reload(); // Removed reload to keep state for manual testing
   };
 
   const copyAddress = () => {
@@ -116,7 +128,7 @@ export function App() {
     try {
       const def = DEFAULT_DEFINITION_TEMPLATE(contractId, network);
       setDefinitionJSON(JSON.stringify(def, null, 2));
-    } catch {}
+    } catch { }
   }, [contractId, network]);
 
   async function refresh() {
@@ -189,7 +201,28 @@ export function App() {
             </button>
           </div>
         ) : (
-          <button onClick={handleConnect}>Connect Stacks Wallet</button>
+          <div>
+            <button onClick={handleConnect} style={{ marginRight: '10px' }}>Connect Stacks Wallet</button>
+            <button onClick={() => setShowManualInput(!showManualInput)}>
+              {showManualInput ? 'Cancel Manual' : 'Connect Manually'}
+            </button>
+
+            {showManualInput && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '4px' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Enter Stacks Address:</label>
+                <input
+                  type="text"
+                  value={manualAddress}
+                  onChange={(e) => setManualAddress(e.target.value)}
+                  placeholder="ST..."
+                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
+                />
+                <button onClick={handleManualConnect} disabled={!manualAddress}>
+                  Set Address
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </section>
 
