@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
-import { useConnect } from '@stacks/connect-react';
+import { Connect } from '@stacks/connect-react';
+import { AppConfig, UserSession, showConnect } from '@stacks/connect';
 
 const ENV_DEFAULT_BASE = (import.meta as any).env?.VITE_CHAINHOOKS_BASE_URL as string | undefined;
 const ENV_API_KEY = (import.meta as any).env?.VITE_CHAINHOOKS_API_KEY as string | undefined;
@@ -13,51 +14,56 @@ function useClient(baseUrl: string, apiKey?: string, jwt?: string) {
   return useMemo(() => new ChainhooksClient({ baseUrl, apiKey, jwt }), [baseUrl, apiKey, jwt]);
 }
 
-const { userSession, doOpenAuth } = useConnect();
-
 const DEFAULT_DEFINITION_TEMPLATE = (contractId: string, network: Network) => ({
   name: 'Stacks Payroll Invoices',
   chain: 'stacks',
   network,
   filters: {
-    // Provide your filters per Chainhooks schema.
-    // The following is a starting point — adjust to your needs or paste a full filters object.
     contract_id: contractId,
     calls: [{ function_name: 'create-invoice' }, { function_name: 'pay-invoice' }],
     prints_contains: ['"event":"invoice-created"', '"event":"invoice-paid"'],
   },
-  options: {
-    // start_at_block_height: 1000000,
-  },
+  options: {},
   action: {
-    // Example webhook action; replace with your endpoint and any headers/secrets as required.
     type: 'webhook',
     url: 'https://example.com/chainhooks/webhook',
-    // headers: [{ key: 'X-Secret', value: '...' }],
   },
 });
 
-export function App() {
+const appConfig = new AppConfig(['store_write', 'publish_data']);
+const userSession = new UserSession({ appConfig });
+
+function ChainhooksManager() {
   const [network, setNetwork] = useState<Network>(ENV_DEFAULT_NETWORK);
-  const [customBase, setCustomBase] = useState<string>(ENV_DEFAULT_BASE ?? '');
+  const [customBase, setCustomBase] = useState(ENV_DEFAULT_BASE ?? '');
   const baseUrl = network === 'mainnet' ? CHAINHOOKS_BASE_URL.mainnet : CHAINHOOKS_BASE_URL.testnet;
   const finalBaseUrl = customBase || baseUrl;
-
-  const [apiKey, setApiKey] = useState<string>(ENV_API_KEY ?? '');
-  const [jwt, setJwt] = useState<string>(ENV_JWT ?? '');
+  const [apiKey, setApiKey] = useState(ENV_API_KEY ?? '');
+  const [jwt, setJwt] = useState(ENV_JWT ?? '');
   const client = useClient(finalBaseUrl, apiKey || undefined, jwt || undefined);
 
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [hooks, setHooks] = useState<Chainhook[]>([]);
+  const [name, setName] = useState('Stacks Payroll Invoices');
+  const [contractId, setContractId] = useState('');
+  const [definitionJSON, setDefinitionJSON] = useState('');
 
-  const [name, setName] = useState<string>('Stacks Payroll Invoices');
-  const [contractId, setContractId] = useState<string>('');
-  const [definitionJSON, setDefinitionJSON] = useState<string>('');
+  const handleConnect = () => {
+    showConnect({
+      appDetails: {
+        name: 'Stacks Chainhooks Manager',
+        icon: window.location.origin + '/logo.png',
+      },
+      redirectTo: '/',
+      onFinish: () => {
+        window.location.reload();
+      },
+      userSession,
+    });
+  };
 
-  // Initialize definition template when contractId or network changes
   useEffect(() => {
     try {
       const def = DEFAULT_DEFINITION_TEMPLATE(contractId, network);
@@ -82,7 +88,6 @@ export function App() {
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalBaseUrl, apiKey, jwt]);
 
   async function register() {
@@ -120,105 +125,119 @@ export function App() {
   }
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', margin: '2rem', maxWidth: 1000 }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Stacks Chainhooks Manager</h1>
-      <section style={{ marginBottom: '1.5rem' }}>
-  <h2>Wallet</h2>
-  {userSession?.isUserSignedIn() ? (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-      {(() => {
-        try {
-          const userData: any = userSession.loadUserData();
-          const addr: string | undefined = userData?.profile?.stxAddress?.[network];
-          return (
-            <>
-              <span>Connected: {addr ?? 'Unknown address'}</span>
-              <button
-                onClick={() => {
-                  try {
-                    navigator.clipboard.writeText(addr ?? '');
-                  } catch {}
-                }}
-              >
-                Copy
-              </button>
-              <button
-                onClick={() => {
-                  userSession.signUserOut();
-                  window.location.reload();
-                }}
-                style={{ color: 'crimson' }}
-              >
-                Disconnect
-              </button>
-            </>
-          );
-        } catch {
-          return (
-            <button
-              onClick={() => {
-                userSession.signUserOut();
-                window.location.reload();
-              }}
-              style={{ color: 'crimson' }}
-            >
-              Disconnect
-            </button>
-          );
-        }
-      })()}
-    </div>
-  ) : (
-    <button onClick={() => doOpenAuth?.()}>Connect Stacks Wallet</button>
-  )}
-</section>
 
-      <section style={{ marginBottom: '1.5rem' }}>
-        <h2>Configuration</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '0.5rem 1rem', alignItems: 'center' }}>
-          <label>Network</label>
+      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <h2>Wallet</h2>
+        {userSession?.isUserSignedIn() ? (
           <div>
-            <select value={network} onChange={(e) => setNetwork(e.target.value as Network)}>
-              <option value="mainnet">mainnet ({CHAINHOOKS_BASE_URL.mainnet})</option>
-              <option value="testnet">testnet ({CHAINHOOKS_BASE_URL.testnet})</option>
-            </select>
+            {(() => {
+              try {
+                const userData: any = userSession.loadUserData();
+                const addr: string | undefined = userData?.profile?.stxAddress?.[network];
+                return (
+                  <>
+                    <p>Connected: {addr ?? 'Unknown address'}</p>
+                    <button
+                      onClick={() => {
+                        try {
+                          navigator.clipboard.writeText(addr ?? '');
+                        } catch {}
+                      }}
+                      style={{ marginRight: '8px' }}
+                    >
+                      Copy
+                    </button>
+                    <button
+                      onClick={() => {
+                        userSession.signUserOut();
+                        window.location.reload();
+                      }}
+                      style={{ color: 'crimson' }}
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                );
+              } catch {
+                return (
+                  <button
+                    onClick={() => {
+                      userSession.signUserOut();
+                      window.location.reload();
+                    }}
+                    style={{ color: 'crimson' }}
+                  >
+                    Disconnect
+                  </button>
+                );
+              }
+            })()}
           </div>
+        ) : (
+          <button onClick={handleConnect}>Connect Stacks Wallet</button>
+        )}
+      </section>
 
-          <label>Custom Base URL</label>
-          <input placeholder="Override base URL (optional)" value={customBase} onChange={(e) => setCustomBase(e.target.value)} />
-
-          <label>API Key</label>
-          <input placeholder="api key (optional)" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
-
-          <label>JWT</label>
-          <input placeholder="jwt (optional)" value={jwt} onChange={(e) => setJwt(e.target.value)} />
+      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <h2>Configuration</h2>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Network</label>
+          <select value={network} onChange={(e) => setNetwork(e.target.value as Network)}>
+            <option value="mainnet">mainnet ({CHAINHOOKS_BASE_URL.mainnet})</option>
+            <option value="testnet">testnet ({CHAINHOOKS_BASE_URL.testnet})</option>
+          </select>
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Custom Base URL</label>
+          <input type="text" value={customBase} onChange={(e) => setCustomBase(e.target.value)} style={{ width: '100%' }} />
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>API Key</label>
+          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} style={{ width: '100%' }} />
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>JWT</label>
+          <input type="password" value={jwt} onChange={(e) => setJwt(e.target.value)} style={{ width: '100%' }} />
         </div>
       </section>
 
-      <section style={{ marginBottom: '1.5rem' }}>
+      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
         <h2>Status</h2>
-        {loading ? <p>Loading…</p> : status ? (
-          <pre style={{ background: '#f6f8fa', padding: '0.75rem', borderRadius: 6 }}>
+        {loading ? (
+          <div>Loading…</div>
+        ) : status ? (
+          <pre style={{ background: '#f5f5f5', padding: '1rem', borderRadius: '4px', overflow: 'auto' }}>
             {JSON.stringify(status, null, 2)}
           </pre>
         ) : (
           <p>No status yet.</p>
         )}
-        {error && <p style={{ color: 'crimson' }}>Error: {error}</p>}
-        <button onClick={refresh}>Refresh</button>
+        {error && <div style={{ color: 'crimson', marginTop: '1rem' }}>Error: {error}</div>}
+        <button onClick={refresh} style={{ marginTop: '1rem' }}>
+          Refresh
+        </button>
       </section>
 
-      <section style={{ marginBottom: '1.5rem' }}>
+      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
         <h2>Register Payroll Chainhook</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '0.5rem 1rem', alignItems: 'start' }}>
-          <label>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-
-          <label>Contract ID</label>
-          <input placeholder="SP… .chainhook-contract" value={contractId} onChange={(e) => setContractId(e.target.value)} />
-
-          <label>Definition (JSON)</label>
-          <textarea rows={12} value={definitionJSON} onChange={(e) => setDefinitionJSON(e.target.value)} style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }} />
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%' }} />
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Contract ID</label>
+          <input type="text" value={contractId} onChange={(e) => setContractId(e.target.value)} style={{ width: '100%' }} />
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Definition (JSON)</label>
+          <textarea
+            value={definitionJSON}
+            onChange={(e) => setDefinitionJSON(e.target.value)}
+            rows={15}
+            style={{ width: '100%', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+          />
         </div>
         <div style={{ marginTop: '0.75rem' }}>
           <button onClick={register}>Register</button>
@@ -227,7 +246,9 @@ export function App() {
 
       <section>
         <h2>Existing Chainhooks</h2>
-        {hooks.length === 0 ? <p>No chainhooks.</p> : (
+        {hooks.length === 0 ? (
+          <p>No chainhooks.</p>
+        ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -247,7 +268,9 @@ export function App() {
                     <button onClick={() => toggleEnabled(h.uuid, !h.enabled)} style={{ marginRight: 8 }}>
                       {h.enabled ? 'Disable' : 'Enable'}
                     </button>
-                    <button onClick={() => remove(h.uuid)} style={{ color: 'crimson' }}>Delete</button>
+                    <button onClick={() => remove(h.uuid)} style={{ color: 'crimson' }}>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -256,5 +279,25 @@ export function App() {
         )}
       </section>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <Connect
+      authOptions={{
+        appDetails: {
+          name: 'Stacks Chainhooks Manager',
+          icon: window.location.origin + '/logo.png',
+        },
+        redirectTo: '/',
+        onFinish: () => {
+          window.location.reload();
+        },
+        userSession,
+      }}
+    >
+      <ChainhooksManager />
+    </Connect>
   );
 }
