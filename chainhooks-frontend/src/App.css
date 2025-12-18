@@ -372,3 +372,89 @@ tr:hover td {
     padding: 2rem;
   }
 }
+
+/* Invoice Card Styles */
+.invoice-card {
+  background: rgba(17, 34, 64, 0.8);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-card.paid {
+  border-color: rgba(100, 255, 218, 0.5);
+  box-shadow: 0 0 15px rgba(100, 255, 218, 0.1);
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(230, 241, 255, 0.1);
+  padding-bottom: 1rem;
+}
+
+.invoice-header h3 {
+  margin: 0;
+  color: var(--light-slate);
+  font-size: 1.2rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.paid {
+  background: rgba(100, 255, 218, 0.1);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.status-badge.unpaid {
+  background: rgba(255, 85, 85, 0.1);
+  color: #ff5555;
+  border: 1px solid #ff5555;
+}
+
+.invoice-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.invoice-row .label {
+  color: var(--slate);
+  font-size: 0.9rem;
+}
+
+.invoice-row .value {
+  color: var(--lightest-slate);
+  font-weight: 500;
+}
+
+.invoice-row .value.highlight {
+  color: var(--green);
+  font-size: 1.1rem;
+}
+
+.invoice-row .value.mono {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(230, 241, 255, 0.1);
+  margin: 1rem 0;
+}

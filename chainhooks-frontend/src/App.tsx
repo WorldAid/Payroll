@@ -9,6 +9,10 @@ import toast, { Toaster } from 'react-hot-toast';
 import './App.css';
 import { LandingPage } from './LandingPage';
 
+import * as Undici from 'undici';
+import { InvoiceCard } from './InvoiceCard';
+
+console.log('Undici module:', Undici);
 console.log('StacksConnect imports:', StacksConnect);
 console.log('authenticate:', authenticate);
 
@@ -35,7 +39,7 @@ const DEFAULT_DEFINITION_TEMPLATE = (contractId: string, network: Network) => ({
   options: {},
   action: {
     type: 'webhook',
-    url: 'https://example.com/chainhooks/webhook',
+    url: 'https://46f03bc078f8.ngrok-free.app/webhook',
   },
 });
 
@@ -140,14 +144,20 @@ function Dashboard() {
   }, [contractId, network]);
 
   async function refresh() {
+    console.log('Refreshing status...');
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching status from:', finalBaseUrl);
       const s = await client.getStatus();
+      console.log('Status response:', s);
       setStatus(s);
+      console.log('Fetching chainhooks...');
       const { results } = await client.getChainhooks({ limit: 50, offset: 0 });
+      console.log('Chainhooks response:', results);
       setHooks(results);
     } catch (e: any) {
+      console.error('Refresh error:', e);
       setError(e?.message ?? String(e));
       toast.error('Failed to refresh status');
     } finally {
@@ -209,7 +219,9 @@ function Dashboard() {
   // Smart Contract Interaction State
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
+  const [invoiceName, setInvoiceName] = useState(''); // New state for Invoice Name
   const [invoiceId, setInvoiceId] = useState('');
+  const [searchName, setSearchName] = useState(''); // State for lookup by name
   const [invoiceDetails, setInvoiceDetails] = useState<any>(null);
 
   const isManualMode = !((typeof window !== 'undefined' && (window as any).btc) || (typeof window !== 'undefined' && (window as any).StacksProvider));
@@ -219,6 +231,10 @@ function Dashboard() {
       toast.error('Please set the Contract ID first.');
       return;
     }
+    if (!invoiceName) {
+      toast.error('Please enter an Invoice Name.');
+      return;
+    }
 
     if (isManualMode) {
       const mockTxId = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
@@ -226,6 +242,17 @@ function Dashboard() {
         icon: '🧪',
         duration: 5000,
       });
+      // Simulate backend save
+      try {
+        await fetch('http://localhost:3000/invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: invoiceName, txId: mockTxId }),
+        });
+        toast.success('Invoice name saved (simulated)');
+      } catch (e) {
+        console.error('Backend save failed:', e);
+      }
       return;
     }
 
@@ -241,9 +268,22 @@ function Dashboard() {
         name: 'Stacks Chainhooks Manager',
         icon: window.location.origin + '/vite.svg',
       },
-      onFinish: (data: any) => {
+      onFinish: async (data: any) => {
         console.log('Transaction finished:', data);
         toast.success(`Transaction broadcasted: ${data.txId}`);
+
+        // Save to backend
+        try {
+          await fetch('http://localhost:3000/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: invoiceName, txId: data.txId }),
+          });
+          toast.success('Invoice name saved to backend');
+        } catch (e) {
+          console.error('Backend save failed:', e);
+          toast.error('Failed to save invoice name');
+        }
       },
     };
     console.log('openContractCall options (create-invoice):', options);
@@ -251,6 +291,7 @@ function Dashboard() {
   };
 
   const handlePayInvoice = async () => {
+    // ... (existing pay logic)
     if (!contractId) {
       toast.error('Please set the Contract ID first.');
       return;
@@ -293,14 +334,43 @@ function Dashboard() {
     }
     const [contractAddress, contractName] = contractId.split('.');
 
-    const toastId = toast.loading('Fetching invoice...');
+    let targetId = invoiceId;
+
+    // If searchName is provided, try to resolve it to an ID first
+    if (searchName) {
+      const toastId = toast.loading(`Looking up "${searchName}"...`);
+      try {
+        const res = await fetch(`http://localhost:3000/invoices/${searchName}`);
+        if (!res.ok) {
+          throw new Error('Invoice not found by name');
+        }
+        const data = await res.json();
+        if (data.invoiceId) {
+          targetId = data.invoiceId;
+          toast.success(`Found ID: ${targetId}`, { id: toastId });
+        } else {
+          toast.loading(`Invoice "${searchName}" is pending confirmation...`, { id: toastId });
+          return;
+        }
+      } catch (e) {
+        toast.error(`Lookup failed: ${searchName} not found`, { id: toastId });
+        return;
+      }
+    }
+
+    if (!targetId) {
+      toast.error('Please enter an Invoice ID or Name');
+      return;
+    }
+
+    const toastId = toast.loading(`Fetching invoice ${targetId}...`);
     try {
       const result = await fetchCallReadOnlyFunction({
         network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
         contractAddress,
         contractName,
         functionName: 'get-invoice',
-        functionArgs: [uintCV(invoiceId)],
+        functionArgs: [uintCV(targetId)],
         senderAddress: userAddress || contractAddress,
       });
       setInvoiceDetails(cvToJSON(result));
@@ -459,6 +529,10 @@ function Dashboard() {
           <h3>Create Invoice</h3>
           <div className="grid-2">
             <div>
+              <label>Invoice Name</label>
+              <input type="text" value={invoiceName} onChange={(e) => setInvoiceName(e.target.value)} placeholder="e.g. Project Alpha" />
+            </div>
+            <div>
               <label>Recipient Address</label>
               <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="ST..." />
             </div>
@@ -482,18 +556,18 @@ function Dashboard() {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
           <h3>Get Invoice Details</h3>
           <div className="flex-row" style={{ alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, marginRight: '1rem' }}>
+              <label>Search by Name</label>
+              <input type="text" value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder="e.g. Project Alpha" style={{ marginBottom: 0 }} />
+            </div>
             <div style={{ flex: 1 }}>
-              <label>Invoice ID</label>
+              <label>Or Invoice ID</label>
               <input type="number" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} placeholder="1" style={{ marginBottom: 0 }} />
             </div>
             <button onClick={handleGetInvoice}>Get Invoice</button>
           </div>
 
-          {invoiceDetails && (
-            <pre className="status-box" style={{ marginTop: '1rem' }}>
-              {JSON.stringify(invoiceDetails, null, 2)}
-            </pre>
-          )}
+          {invoiceDetails && <InvoiceCard data={invoiceDetails} />}
         </div>
       </section>
 
