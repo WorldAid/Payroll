@@ -14,4 +14,7 @@ export default defineConfig({
       undici: resolve(__dirname, 'src/undici-shim.ts'),
     },
   },
+  optimizeDeps: {
+    exclude: ['undici'],
+  },
 });

@@ -10,23 +10,34 @@ export async function request(url: string | URL, options: any = {}) {
     const headers = options.headers || {};
     const body = options.body;
 
+    console.log(`[undici-shim] Request: ${method} ${url}`);
+
     const response = await fetch(url, {
         method,
         headers,
         body,
     });
 
+    console.log(`[undici-shim] Response status: ${response.status}`);
+
+    const responseBody = {
+        text: async () => {
+            console.log('[undici-shim] body.text() called');
+            return await response.text();
+        },
+        json: async () => {
+            console.log('[undici-shim] body.json() called');
+            return await response.json();
+        },
+        blob: async () => await response.blob(),
+        arrayBuffer: async () => await response.arrayBuffer(),
+        getReader: () => response.body?.getReader(),
+    };
+
     return {
         statusCode: response.status,
         headers: Object.fromEntries(response.headers.entries()),
-        body: {
-            text: () => response.text(),
-            json: () => response.json(),
-            blob: () => response.blob(),
-            arrayBuffer: () => response.arrayBuffer(),
-            // Fallback for stream access if needed, though .text() is preferred
-            getReader: () => response.body?.getReader(),
-        },
+        body: responseBody,
         trailers: {},
     };
 }

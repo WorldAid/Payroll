@@ -9,6 +9,9 @@ import toast, { Toaster } from 'react-hot-toast';
 import './App.css';
 import { LandingPage } from './LandingPage';
 
+import * as Undici from 'undici';
+
+console.log('Undici module:', Undici);
 console.log('StacksConnect imports:', StacksConnect);
 console.log('authenticate:', authenticate);
 
