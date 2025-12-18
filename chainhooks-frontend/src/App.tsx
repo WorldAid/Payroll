@@ -152,14 +152,19 @@ function Dashboard() {
   }, [finalBaseUrl, apiKey, jwt]);
 
   async function register() {
+    console.log('Register button clicked');
     setError(null);
     try {
+      console.log('Parsing definition JSON:', definitionJSON);
       const parsed = JSON.parse(definitionJSON) as ChainhookDefinition;
       if (!parsed.name && name) parsed.name = name;
+      console.log('Sending registration request:', parsed);
       const res = await client.registerChainhook(parsed);
+      console.log('Registration response:', res);
       await refresh();
       alert(`Registered: ${res.uuid}`);
     } catch (e: any) {
+      console.error('Registration error:', e);
       setError(e?.message ?? String(e));
     }
   }
@@ -465,11 +470,11 @@ function Dashboard() {
                   <tr key={h.uuid}>
                     <td>{h.definition?.name ?? '(no name)'}</td>
                     <td>{h.uuid}</td>
-                    <td>{String(h.enabled)}</td>
+                    <td>{String(h.status.enabled)}</td>
                     <td>
                       <div className="flex-row">
-                        <button onClick={() => toggleEnabled(h.uuid, !h.enabled)} className="secondary">
-                          {h.enabled ? 'Disable' : 'Enable'}
+                        <button onClick={() => toggleEnabled(h.uuid, !h.status.enabled)} className="secondary">
+                          {h.status.enabled ? 'Disable' : 'Enable'}
                         </button>
                         <button onClick={() => remove(h.uuid)} className="danger">
                           Delete
