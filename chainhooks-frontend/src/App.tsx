@@ -140,14 +140,20 @@ function Dashboard() {
   }, [contractId, network]);
 
   async function refresh() {
+    console.log('Refreshing status...');
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching status from:', finalBaseUrl);
       const s = await client.getStatus();
+      console.log('Status response:', s);
       setStatus(s);
+      console.log('Fetching chainhooks...');
       const { results } = await client.getChainhooks({ limit: 50, offset: 0 });
+      console.log('Chainhooks response:', results);
       setHooks(results);
     } catch (e: any) {
+      console.error('Refresh error:', e);
       setError(e?.message ?? String(e));
       toast.error('Failed to refresh status');
     } finally {
