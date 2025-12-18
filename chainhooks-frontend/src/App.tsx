@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
 import { AppConfig, UserSession, openContractCall, authenticate } from '@stacks/connect';
 import * as StacksConnect from '@stacks/connect';
 import { fetchCallReadOnlyFunction, uintCV, standardPrincipalCV, cvToJSON } from '@stacks/transactions';
 import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
 import './App.css';
+import { LandingPage } from './LandingPage';
 
 console.log('StacksConnect imports:', StacksConnect);
 console.log('authenticate:', authenticate);
@@ -39,7 +41,7 @@ const DEFAULT_DEFINITION_TEMPLATE = (contractId: string, network: Network) => ({
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
 
-export function App() {
+function Dashboard() {
   const [network, setNetwork] = useState<Network>(ENV_DEFAULT_NETWORK);
   const [customBase, setCustomBase] = useState(ENV_DEFAULT_BASE ?? '');
   const baseUrl = network === 'mainnet' ? CHAINHOOKS_BASE_URL.mainnet : CHAINHOOKS_BASE_URL.testnet;
@@ -478,5 +480,17 @@ export function App() {
         )}
       </section>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
