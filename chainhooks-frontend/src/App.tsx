@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL, type Chainhook, type ChainhookDefinition } from '@hirosystems/chainhooks-client';
 import { AppConfig, UserSession, openContractCall, authenticate } from '@stacks/connect';
 import * as StacksConnect from '@stacks/connect';
@@ -42,6 +42,7 @@ const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [network, setNetwork] = useState<Network>(ENV_DEFAULT_NETWORK);
   const [customBase, setCustomBase] = useState(ENV_DEFAULT_BASE ?? '');
   const baseUrl = network === 'mainnet' ? CHAINHOOKS_BASE_URL.mainnet : CHAINHOOKS_BASE_URL.testnet;
@@ -283,6 +284,9 @@ function Dashboard() {
 
   return (
     <div className="app-container">
+      <button className="btn secondary" onClick={() => navigate('/')} style={{ marginBottom: '1rem' }}>
+        &larr; Back to Home
+      </button>
       <h1>Stacks Chainhooks Manager</h1>
 
       <section className="card">
