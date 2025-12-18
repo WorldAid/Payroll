@@ -56,7 +56,7 @@ function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [hooks, setHooks] = useState<Chainhook[]>([]);
   const [name, setName] = useState('Stacks Payroll Invoices');
-  const [contractId, setContractId] = useState('');
+  const [contractId, setContractId] = useState('SP2A8V93XXB43Q8JXQNCS9EBFHZJ6A2HVXHC4F4ZB.chainhook-contract');
   const [definitionJSON, setDefinitionJSON] = useState('');
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userAddress, setUserAddress] = useState<string>('');
