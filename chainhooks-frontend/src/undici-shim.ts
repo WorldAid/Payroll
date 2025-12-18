@@ -19,7 +19,14 @@ export async function request(url: string | URL, options: any = {}) {
     return {
         statusCode: response.status,
         headers: Object.fromEntries(response.headers.entries()),
-        body: response.body, // ReadableStream
+        body: {
+            text: () => response.text(),
+            json: () => response.json(),
+            blob: () => response.blob(),
+            arrayBuffer: () => response.arrayBuffer(),
+            // Fallback for stream access if needed, though .text() is preferred
+            getReader: () => response.body?.getReader(),
+        },
         trailers: {},
     };
 }
