@@ -242,128 +242,133 @@ tr:hover td {
   }
 
 
-  /* Landing Page Styles */
-  .landing-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: radial-gradient(circle at 50% 0%, #112240 0%, #0a192f 100%);
+  .app-container {
+    padding: 1rem;
   }
+}
 
+/* Landing Page Styles */
+.landing-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 0%, #112240 0%, #0a192f 100%);
+}
+
+.landing-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 4rem;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 1px;
+}
+
+.hero-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.hero-title {
+  font-size: 4rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  background: none;
+  -webkit-text-fill-color: var(--text-color);
+  text-shadow: none;
+}
+
+.neon-text {
+  color: var(--primary-color);
+  text-shadow: 0 0 20px rgba(100, 255, 218, 0.5);
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin-bottom: 3rem;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.btn.large {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.feature-card {
+  background: rgba(17, 34, 64, 0.5);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(100, 255, 218, 0.1);
+  transition: var(--transition);
+  text-align: center;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  border-color: var(--primary-color);
+  box-shadow: 0 10px 30px -10px rgba(2, 12, 27, 0.7);
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.landing-footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
   .landing-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2rem 4rem;
-  }
-
-  .logo {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    letter-spacing: 1px;
-  }
-
-  .hero-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 4rem 2rem;
+    padding: 1.5rem;
   }
 
   .hero-title {
-    font-size: 4rem;
-    line-height: 1.1;
-    margin-bottom: 1.5rem;
-    background: none;
-    -webkit-text-fill-color: var(--text-color);
-    text-shadow: none;
-  }
-
-  .neon-text {
-    color: var(--primary-color);
-    text-shadow: 0 0 20px rgba(100, 255, 218, 0.5);
-  }
-
-  .hero-subtitle {
-    font-size: 1.25rem;
-    color: var(--text-secondary);
-    max-width: 600px;
-    margin-bottom: 3rem;
-    line-height: 1.6;
-  }
-
-  .hero-buttons {
-    display: flex;
-    gap: 1.5rem;
-  }
-
-  .btn.large {
-    padding: 1rem 2.5rem;
-    font-size: 1.1rem;
+    font-size: 2.5rem;
   }
 
   .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    padding: 4rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .feature-card {
-    background: rgba(17, 34, 64, 0.5);
     padding: 2rem;
-    border-radius: var(--border-radius);
-    border: 1px solid rgba(100, 255, 218, 0.1);
-    transition: var(--transition);
-    text-align: center;
   }
-
-  .feature-card:hover {
-    transform: translateY(-10px);
-    border-color: var(--primary-color);
-    box-shadow: 0 10px 30px -10px rgba(2, 12, 27, 0.7);
-  }
-
-  .feature-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-
-  .feature-card h3 {
-    color: var(--text-color);
-    margin-bottom: 0.5rem;
-  }
-
-  .feature-card p {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    line-height: 1.5;
-  }
-
-  .landing-footer {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  @media (max-width: 768px) {
-    .landing-nav {
-      padding: 1.5rem;
-    }
-
-    .hero-title {
-      font-size: 2.5rem;
-    }
-
-    .features-grid {
-      padding: 2rem;
-    }
-  }
+}
