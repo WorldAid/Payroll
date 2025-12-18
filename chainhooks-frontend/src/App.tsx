@@ -5,6 +5,7 @@ import { AppConfig, UserSession, openContractCall, authenticate } from '@stacks/
 import * as StacksConnect from '@stacks/connect';
 import { fetchCallReadOnlyFunction, uintCV, standardPrincipalCV, cvToJSON } from '@stacks/transactions';
 import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
+import toast, { Toaster } from 'react-hot-toast';
 import './App.css';
 import { LandingPage } from './LandingPage';
 
@@ -90,11 +91,13 @@ function Dashboard() {
         const addr = userData?.profile?.stxAddress?.[network];
         setIsSignedIn(true);
         setUserAddress(addr || '');
+        toast.success('Wallet connected!');
       },
       onCancel: () => {
         // Fallback to manual
         setError('No wallet selected. Please connect manually below.');
         setShowManualInput(true);
+        toast.error('Connection cancelled. Try manual mode.');
       },
       userSession,
     });
@@ -106,6 +109,7 @@ function Dashboard() {
       setUserAddress(manualAddress.trim());
       setShowManualInput(false);
       setError(null);
+      toast.success('Manual address set!');
     }
   };
 
@@ -115,13 +119,16 @@ function Dashboard() {
     setUserAddress('');
     setManualAddress('');
     setError(null);
+    toast('Disconnected', { icon: '👋' });
   };
 
   const copyAddress = () => {
     try {
       navigator.clipboard.writeText(userAddress);
+      toast.success('Address copied!');
     } catch (e) {
       console.error('Copy failed:', e);
+      toast.error('Failed to copy address');
     }
   };
 
@@ -142,6 +149,7 @@ function Dashboard() {
       setHooks(results);
     } catch (e: any) {
       setError(e?.message ?? String(e));
+      toast.error('Failed to refresh status');
     } finally {
       setLoading(false);
     }
@@ -154,6 +162,7 @@ function Dashboard() {
   async function register() {
     console.log('Register button clicked');
     setError(null);
+    const toastId = toast.loading('Registering chainhook...');
     try {
       console.log('Parsing definition JSON:', definitionJSON);
       const parsed = JSON.parse(definitionJSON) as ChainhookDefinition;
@@ -162,31 +171,38 @@ function Dashboard() {
       const res = await client.registerChainhook(parsed);
       console.log('Registration response:', res);
       await refresh();
-      alert(`Registered: ${res.uuid}`);
+      toast.success(`Registered: ${res.uuid}`, { id: toastId });
     } catch (e: any) {
       console.error('Registration error:', e);
       setError(e?.message ?? String(e));
+      toast.error(`Registration failed: ${e?.message}`, { id: toastId });
     }
   }
 
   async function toggleEnabled(uuid: string, enabled: boolean) {
     setError(null);
+    const toastId = toast.loading(enabled ? 'Enabling...' : 'Disabling...');
     try {
       await client.enableChainhook(uuid, enabled);
       await refresh();
+      toast.success(enabled ? 'Chainhook enabled' : 'Chainhook disabled', { id: toastId });
     } catch (e: any) {
       setError(e?.message ?? String(e));
+      toast.error(`Failed to update: ${e?.message}`, { id: toastId });
     }
   }
 
   async function remove(uuid: string) {
     if (!confirm('Delete this chainhook?')) return;
     setError(null);
+    const toastId = toast.loading('Deleting chainhook...');
     try {
       await client.deleteChainhook(uuid);
       await refresh();
+      toast.success('Chainhook deleted', { id: toastId });
     } catch (e: any) {
       setError(e?.message ?? String(e));
+      toast.error(`Deletion failed: ${e?.message}`, { id: toastId });
     }
   }
 
@@ -200,13 +216,16 @@ function Dashboard() {
 
   const handleCreateInvoice = async () => {
     if (!contractId) {
-      alert('Please set the Contract ID first.');
+      toast.error('Please set the Contract ID first.');
       return;
     }
 
     if (isManualMode) {
       const mockTxId = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      alert(`[SIMULATION] Transaction broadcasted: ${mockTxId}\n\n(This is a simulated transaction because no wallet is connected)`);
+      toast(`[SIMULATION] Transaction broadcasted: ${mockTxId}`, {
+        icon: '🧪',
+        duration: 5000,
+      });
       return;
     }
 
@@ -224,7 +243,7 @@ function Dashboard() {
       },
       onFinish: (data: any) => {
         console.log('Transaction finished:', data);
-        alert(`Transaction broadcasted: ${data.txId}`);
+        toast.success(`Transaction broadcasted: ${data.txId}`);
       },
     };
     console.log('openContractCall options (create-invoice):', options);
@@ -233,13 +252,16 @@ function Dashboard() {
 
   const handlePayInvoice = async () => {
     if (!contractId) {
-      alert('Please set the Contract ID first.');
+      toast.error('Please set the Contract ID first.');
       return;
     }
 
     if (isManualMode) {
       const mockTxId = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      alert(`[SIMULATION] Transaction broadcasted: ${mockTxId}\n\n(This is a simulated transaction because no wallet is connected)`);
+      toast(`[SIMULATION] Transaction broadcasted: ${mockTxId}`, {
+        icon: '🧪',
+        duration: 5000,
+      });
       return;
     }
 
@@ -257,7 +279,7 @@ function Dashboard() {
       },
       onFinish: (data: any) => {
         console.log('Transaction finished:', data);
-        alert(`Transaction broadcasted: ${data.txId}`);
+        toast.success(`Transaction broadcasted: ${data.txId}`);
       },
     };
     console.log('openContractCall options (pay-invoice):', options);
@@ -266,11 +288,12 @@ function Dashboard() {
 
   const handleGetInvoice = async () => {
     if (!contractId) {
-      alert('Please set the Contract ID first.');
+      toast.error('Please set the Contract ID first.');
       return;
     }
     const [contractAddress, contractName] = contractId.split('.');
 
+    const toastId = toast.loading('Fetching invoice...');
     try {
       const result = await fetchCallReadOnlyFunction({
         network: network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET,
@@ -281,14 +304,38 @@ function Dashboard() {
         senderAddress: userAddress || contractAddress,
       });
       setInvoiceDetails(cvToJSON(result));
+      toast.success('Invoice fetched', { id: toastId });
     } catch (e: any) {
       console.error('Error fetching invoice:', e);
       setError(e?.message ?? String(e));
+      toast.error(`Error fetching invoice: ${e?.message}`, { id: toastId });
     }
   };
 
   return (
     <div className="app-container">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#112240',
+            color: '#e6f1ff',
+            border: '1px solid rgba(100, 255, 218, 0.1)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#64ffda',
+              secondary: '#112240',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ff5555',
+              secondary: '#112240',
+            },
+          },
+        }}
+      />
       <button className="btn secondary" onClick={() => navigate('/')} style={{ marginBottom: '1rem' }}>
         &larr; Back to Home
       </button>
