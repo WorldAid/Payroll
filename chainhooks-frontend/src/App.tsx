@@ -10,6 +10,7 @@ import './App.css';
 import { LandingPage } from './LandingPage';
 
 import * as Undici from 'undici';
+import { InvoiceCard } from './InvoiceCard';
 
 console.log('Undici module:', Undici);
 console.log('StacksConnect imports:', StacksConnect);
@@ -490,6 +491,7 @@ function Dashboard() {
 
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
           <h3>Get Invoice Details</h3>
+
           <div className="flex-row" style={{ alignItems: 'flex-end' }}>
             <div style={{ flex: 1 }}>
               <label>Invoice ID</label>
@@ -498,11 +500,7 @@ function Dashboard() {
             <button onClick={handleGetInvoice}>Get Invoice</button>
           </div>
 
-          {invoiceDetails && (
-            <pre className="status-box" style={{ marginTop: '1rem' }}>
-              {JSON.stringify(invoiceDetails, null, 2)}
-            </pre>
-          )}
+          {invoiceDetails && <InvoiceCard data={invoiceDetails} />}
         </div>
       </section>
 
