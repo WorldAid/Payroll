@@ -39,7 +39,7 @@ const DEFAULT_DEFINITION_TEMPLATE = (contractId: string, network: Network) => ({
   options: {},
   action: {
     type: 'webhook',
-    url: 'https://example.com/chainhooks/webhook',
+    url: 'https://46f03bc078f8.ngrok-free.app/webhook',
   },
 });
 
