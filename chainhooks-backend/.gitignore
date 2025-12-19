@@ -1,0 +1,10 @@
+# SQLite database files
+/data/
+
+# Node logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# dist build
+/dist/
