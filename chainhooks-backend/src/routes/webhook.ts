@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 
-import { getInvoiceByTxId, confirmInvoice } from '../db';
+import { getInvoiceByTxId, confirmInvoice } from '../mongo';
 
 const router = Router();
 
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
     const event = req.body;
     console.log('Received Chainhook Event:', JSON.stringify(event, null, 2));
 
@@ -12,19 +12,13 @@ router.post('/', (req: Request, res: Response) => {
         for (const block of event.apply) {
             for (const tx of block.transactions) {
                 if (tx.metadata && tx.metadata.kind === 'data') {
-                    // Check for print events
-                    // The chainhook is configured to capture prints: "prints_contains": ['"event":"invoice-created"']
-                    // But the payload structure for 'data' kind might be different.
-                    // Let's assume we can match by tx_id first.
-
                     const txId = tx.transaction_identifier.hash;
 
                     // Find invoice by txId in DB
-                    const row = getInvoiceByTxId(txId);
+                    const row = await getInvoiceByTxId(txId);
 
                     if (row) {
                         const name = row.name;
-                        // Try to extract the invoice ID from the print event or receipt
                         const events = tx.metadata.receipt?.events || [];
                         for (const evt of events) {
                             if (evt.type === 'SmartContractEvent' && evt.data && evt.data.value) {
@@ -33,8 +27,8 @@ router.post('/', (req: Request, res: Response) => {
                                     const match = valueStr.match(/\(id u(\d+)\)/);
                                     if (match) {
                                         const newId = match[1];
-                                        confirmInvoice(name, newId);
-                                        console.log(`[DB] Invoice confirmed: ${name} -> ID ${newId}`);
+                                        await confirmInvoice(name, newId);
+                                        console.log(`[Mongo] Invoice confirmed: ${name} -> ID ${newId}`);
                                     }
                                 }
                             }
