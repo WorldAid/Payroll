@@ -11,8 +11,28 @@ export type InvoiceDoc = {
   created_at?: Date;
 };
 
-const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
-const dbName = process.env.MONGODB_DB || 'chainhooks';
+function redactMongoUri(uri: string): string {
+  try {
+    // Redact password part user:pass@ → user:***@
+    return uri.replace(/(mongodb(?:\+srv)?:\/\/[^:\/@]+:)[^@]+(@)/, '$1***$2');
+  } catch {
+    return uri;
+  }
+}
+
+const rawUri = process.env.MONGODB_URI || '';
+const uri = rawUri;
+const dbName = process.env.MONGODB_DB || '';
+
+if (!uri) {
+  throw new Error('MONGODB_URI is not set. Define it in chainhooks-backend/.env');
+}
+if (uri.includes('<ENCODED_PASSWORD>') || /<.*>/.test(uri)) {
+  throw new Error('MONGODB_URI still contains a placeholder (e.g., <ENCODED_PASSWORD>). Replace it with your actual URL-encoded password.');
+}
+if (!dbName) {
+  throw new Error('MONGODB_DB is not set. Define it in chainhooks-backend/.env (e.g., MONGODB_DB=chainhooks)');
+}
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -20,8 +40,15 @@ let invoices: Collection<InvoiceDoc> | null = null;
 
 export async function getDb(): Promise<Db> {
   if (!client) {
-    client = new MongoClient(uri);
-    await client.connect();
+    try {
+      client = new MongoClient(uri);
+      await client.connect();
+    } catch (e: any) {
+      const redacted = redactMongoUri(uri);
+      console.error(`[Mongo] Failed to connect. URI=${redacted}`);
+      console.error('[Mongo] Ensure: (1) password is URL-encoded, (2) your IP is allowlisted in Atlas, (3) user has readWrite on the DB.');
+      throw e;
+    }
   }
   if (!db) {
     db = client.db(dbName);
