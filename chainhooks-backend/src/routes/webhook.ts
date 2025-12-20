@@ -19,6 +19,23 @@ router.post('/', async (req: Request, res: Response) => {
 
                     if (row) {
                         const name = row.name;
+
+                        // 1) Try to extract ID from receipt.result (when contract returns (ok (tuple (id uN))))
+                        const resultStr: string | undefined = tx.metadata.receipt?.result;
+                        if (typeof resultStr === 'string') {
+                            // Examples:
+                            //  - "(ok (tuple (id u42)))"
+                            //  - "(ok (tuple (id u1) (other u2)))"
+                            const match = resultStr.match(/\(ok\s*\(tuple[^)]*\(id u(\d+)\)\)/);
+                            if (match) {
+                                const newId = match[1];
+                                await confirmInvoice(name, newId);
+                                console.log(`[Mongo] Invoice confirmed via result: ${name} -> ID ${newId}`);
+                                continue; // proceed to next tx
+                            }
+                        }
+
+                        // 2) Fallback: parse SmartContractEvent print value
                         const events = tx.metadata.receipt?.events || [];
                         for (const evt of events) {
                             if (evt.type === 'SmartContractEvent' && evt.data && evt.data.value) {
@@ -28,7 +45,7 @@ router.post('/', async (req: Request, res: Response) => {
                                     if (match) {
                                         const newId = match[1];
                                         await confirmInvoice(name, newId);
-                                        console.log(`[Mongo] Invoice confirmed: ${name} -> ID ${newId}`);
+                                        console.log(`[Mongo] Invoice confirmed via print: ${name} -> ID ${newId}`);
                                     }
                                 }
                             }
