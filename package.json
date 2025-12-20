@@ -1,0 +1,13 @@
+{
+  "name": "payroll",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "simple-git": "^3.30.0"
+  },
+  "scripts": {
+    "autopush": "node auto-push.js"
+  }
+}
